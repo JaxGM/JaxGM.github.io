@@ -1,6 +1,6 @@
 * {
     font-family: Arial, Helvetica, sans-serif;
-    color: black;
+    color: black !important;
 }
 
 #buttons {
