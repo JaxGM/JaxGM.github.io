@@ -4,18 +4,21 @@
 
 #buttons {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: space-around;
+    flex-direction: column; /* vertical stack of rows */
+    justify-content: flex-start;
     height: 70vh;
-    row-gap: 0.5em;
+    gap: 0.6em;
+    padding: 0.5em;
+    overflow: auto; /* allow scrolling if many buttons */
 }
 
 #buttons button{
     width: 47.5%;
-    font-size: 8vw;
+    /* slightly smaller global button text inside the buttons area */
+    font-size: 7vw;
     font-variant: small-caps;
-    border-width: 0.1em;
-    border-radius: 0.5em;
+    border-width: 0.08em;
+    border-radius: 0.45em;
 }
 
 #buttons button:hover{
@@ -27,6 +30,8 @@
     /* box-shadow: inset; */
     box-shadow: inset -0.15em -0.15em 0.5em 0 rgba(0, 0, 0, 0.75);
 }
+
+
 
 /* AI: iOS/Safari-friendly button overrides inserted below */
 /* These rules deliberately sit after your existing button rules so they don't replace them,
@@ -60,3 +65,115 @@ button, input[type="button"], input[type="submit"], .btn {
     color: #fff;
     -webkit-text-fill-color: #fff;
 }
+
+/* AI: Ensure WebKit/iOS respects our button styles (appearance, color, radius) */
+/* Apply broadly to buttons and common form controls used in the app. */
+button, input[type="button"], input[type="submit"], input[type="text"],
+select, textarea, .category-btn, .bundle-btn, .btn--primary, .btn--secondary, .close {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    background-clip: padding-box; /* avoid inner shadow clipping on iOS */
+    -webkit-text-fill-color: inherit; /* let color cascade */
+    -webkit-tap-highlight-color: transparent; /* remove grey tap highlight on iOS */
+}
+
+/* Keep focused/active styles accessible — provide a visible focus ring for keyboard users */
+button:focus, input:focus, select:focus, textarea:focus {
+    outline: 2px solid rgba(25, 118, 210, 0.25);
+    outline-offset: 2px;
+}
+
+/* Popup and generated menu styles (simple, following existing aesthetic) */
+.popup{
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.35);
+    z-index: 9999;
+    padding: 1rem;
+}
+.popup.show{ display:flex; }
+.popup .card{
+    background: #fff;
+    border-radius: 0.5em;
+    border: 0.12em solid rgba(0,0,0,0.12);
+    width: 95%;
+    max-width: 520px;
+    box-shadow: 0 0.5em 1em rgba(0,0,0,0.15);
+    overflow: hidden;
+}
+.card-header{ display:flex; align-items:center; justify-content:space-between; padding:0.75em 1em; border-bottom:0.06em solid rgba(0,0,0,0.06); }
+.card-header h2{ margin:0; font-size:1.15rem; font-variant: small-caps; }
+.card-body{ padding:1em; }
+.close{ background:transparent; border:none; font-size:1.4rem; cursor:pointer; }
+.btn--primary{ background:#1976d2; color:#fff; border-radius:0.4em; border:0.12em solid rgba(0,0,0,0.12); padding:0.5em 0.9em; }
+.btn--secondary{ background:#f2f2f2; color:#111; border-radius:0.4em; border:0.12em solid rgba(0,0,0,0.12); padding:0.5em 0.9em; }
+.button-row{ display:flex; gap:0.5em; justify-content:flex-end; margin-top:1em; }
+
+/* Generated category buttons */
+.category-btn{
+    flex: 1 1 calc(50% - 1em);
+    max-width: 48%;
+    min-width: 130px;
+    /* a smidge smaller than before so bundle stands out */
+    font-size: clamp(12px, 7vw, 30px);
+    font-variant: small-caps;
+    box-sizing: border-box;
+    padding: 0.35em 0.5em;
+    min-height: 48px;
+    border: 0.12em solid rgba(0,0,0,0.18);
+    border-radius: 0.45em;
+    -webkit-appearance: none;
+    appearance: none;
+    color: #111;
+    -webkit-text-fill-color: #111;
+}
+.category-row{ display:flex; flex-wrap:wrap; gap:0.5em; justify-content:space-around; }
+
+/* Simple small helpers */
+.items-list label{ display:block; margin:0.25em 0; }
+.disabled{ opacity:0.6; pointer-events:none; }
+
+/* Bundle button should visually match category buttons but span wider and sit slightly separated */
+.bundle-btn{
+    /* match category button sizing so bundle looks the same size */
+    display: block;
+    margin-top: 0.6em; /* tiny gap between main buttons and bundle */
+    margin-left: auto;
+    margin-right: auto; /* center the bundle button */
+    max-width: 48%;
+    min-width: 130px;
+    font-size: clamp(12px, 7vw, 30px);
+    padding: 0.35em 0.5em;
+    min-height: 48px;
+    border-radius: 0.45em;
+    background-color: lemonchiffon; /* keep the previous color */
+}
+
+/* success flash: gentle green bloom */
+/* success flash: gentle green bloom that stays until user clicks */
+.success-flash{
+    position: fixed;
+    inset: 0;
+    pointer-events: auto; /* intercept clicks so user must click to dismiss */
+    /* stronger green overlay per request */
+    background: rgba(76,175,80,0.8); /* 80% opacity */
+    opacity: 0;
+    z-index: 10000;
+    transform: scale(1);
+    transition: opacity 260ms ease-out, transform 260ms ease-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.success-flash.show{
+    opacity: 1;
+    transform: scale(1.01);
+}
+
+/* centered white check */
+.success-check{ display:flex; align-items:center; justify-content:center; width:120px; height:120px; border-radius:999px; background: rgba(255,255,255,0.20); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+.success-check svg { filter: drop-shadow(0 2px 6px rgba(0,0,0,0.18)); }

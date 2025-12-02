@@ -8,7 +8,7 @@
 </head>
 <body>
      <h1 style="font-size: 8vw;">PHS NHS Receipt Book</h1>
-     <p style="margin-top: -1em; text-align: right;">Hello! v4</p>
+    <p id="greeting" style="margin-top: -1em; text-align: right;">Hello! v4</p>
      <hr>
 
      <div id="login" hidden>
@@ -19,17 +19,18 @@
         </div>
      </div>
 
-     <div id="outterMenu"> 
-        <div id="buttons">
-            <button style="background-color: lightpink;">Regular Chips</button>
-            <button style="background-color: orangered;">Hot Chips</button>
-            <button style="background-color: cyan;">Cookies</button>
-            <button style="background-color: greenyellow;">Candies</button>
-            <button style="background-color: salmon;">Sodas</button>
-            <button style="background-color: plum;">Teas</button>            
-            <button style="background-color: lemonchiffon; margin-top: 0.5em; width: 75%;">Bundle</button>
-        </div>
-     </div>
+      <div id="outterMenu"> 
+          <!-- dynamic buttons will be generated from menu.csv -->
+          <div id="buttons"></div>
+
+    <!-- Bundle stays as a special action; JS will open a bundle popup showing all items -->
+    <button id="bundleBtn" class="category-btn bundle-btn">Bundle</button>
+      </div>
+
+     <!-- popup root: JS will inject popups here -->
+     <div id="popup-root" aria-live="polite"></div>
+
+     <script src="code.js"></script>
 
 
 </body>
