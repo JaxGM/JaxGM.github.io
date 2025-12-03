@@ -1,5 +1,107 @@
+/* Rounded boxes around bundle items */
+.items-list .bundle-row,
+.items-list label.bundle-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid rgba(0,0,0,0.15);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    margin: 0.35rem 0;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+/* Make counter buttons look like small pills and respect iOS */
+.items-list .qty-controls button {
+    -webkit-appearance: none;
+    appearance: none;
+    border: 1px solid rgba(0,0,0,0.2);
+    background: #f7f7f7;
+    color: #111;
+    border-radius: 999px;
+    padding: 0.15rem 0.5rem;
+    line-height: 1.2;
+    min-width: 2rem;
+}
+
+.items-list .qty-count {
+    min-width: 1.2rem;
+    text-align: center;
+    font-weight: 600;
+}
+
+/* Make item name flex safely without causing horizontal scroll */
+.items-list .item-name {
+    /* Prefer breaking at spaces, not inside words */
+    overflow-wrap: break-word; /* only break at allowed points */
+    word-break: normal;        /* avoid breaking mid-word */
+    hyphens: auto;             /* allow hyphenation if the language supports */
+}
+
+/* Prevent horizontal scrolling inside popup on mobile */
+.popup .card,
+.popup .card-body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Ensure items list doesn’t exceed container width */
+.items-list {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr; /* default: single column on phones */
+    gap: 0.6rem;
+}
+
+/* Only go to two columns when there's enough room to avoid crushing text */
+@media (min-width: 680px) {
+    .items-list {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+}
 * {
     font-family: Arial, Helvetica, sans-serif;
+}
+
+/* WebKit/iOS global adjustments */
+html, body {
+    -webkit-text-size-adjust: 100%; /* prevent automatic text resizing */
+    text-size-adjust: 100%;
+}
+
+/* Remove iOS tap highlight and ensure consistent touch behavior */
+body {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; /* hint: only discrete taps, improves click latency */
+}
+
+/* Ensure border radius is actually painted on WebKit for common interactive elements */
+button, .btn, .category-btn, .bundle-btn, .close {
+    background-clip: padding-box;
+    -webkit-background-clip: padding-box;
+    border-radius: 0.45em; /* reinforce rounding for iOS */
+}
+
+/* iOS sometimes ignores color on disabled state; keep text readable */
+button[disabled], .btn[disabled] {
+    color: rgba(0,0,0,0.45) !important;
+    -webkit-text-fill-color: rgba(0,0,0,0.45) !important;
+}
+
+/* Strengthen counter buttons appearance on iOS */
+.items-list .qty-controls button {
+    -webkit-background-clip: padding-box;
+    background-clip: padding-box;
+    font-weight: 600;
+}
+
+/* Prevent odd line-height clipping on iOS */
+button, .btn, .category-btn, .bundle-btn {
+    line-height: 1.15;
 }
 
 #buttons {
@@ -151,6 +253,37 @@ button:focus, input:focus, select:focus, textarea:focus {
     min-height: 48px;
     border-radius: 0.45em;
     background-color: lemonchiffon; /* keep the previous color */
+}
+
+/* Bundle popup: make items display in two columns and allow scrolling when content is tall */
+#popup-bundle .card{
+    /* limit overall popup height so it fits on small screens */
+    max-height: 80vh;
+}
+#popup-bundle .card-body{
+    /* make body scrollable when there are many items */
+    max-height: 60vh;
+    overflow: auto;
+}
+#popup-bundle .items-list{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.45em 0.6em;
+    align-items: start;
+}
+#popup-bundle .items-list label{
+    display: block;
+    margin: 0;
+    padding: 0.35em 0.5em;
+    border-radius: 0.35em;
+    background: #fbfbfb;
+    border: 0.06em solid rgba(0,0,0,0.04);
+}
+
+@media (max-width: 420px){
+    /* stack to single column on narrow screens */
+    #popup-bundle .items-list{ grid-template-columns: 1fr; }
+    #popup-bundle .card-body{ max-height: 50vh; }
 }
 
 /* success flash: gentle green bloom */

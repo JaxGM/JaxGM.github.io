@@ -107,31 +107,41 @@ document.addEventListener('DOMContentLoaded', () => {
    as a simulated failure. */
 async function api_call(text){
     const message = String(text);
+    // Use the user's relay API to avoid CORS and keep bot token server-side.
+    const proxyBase = 'https://groupme-api-layover.onrender.com/relay';
+    const BOT_ID = '6eb53a0125b6ed5a930057de4c'; // sent as query param to relay
 
-    const options = {
-        method: 'POST',
-        headers: {
-            Authorization: 'Bearer i7wYlQX96lUXmhPZnKgIvq1Q3ouYo2Xk9vdfI4BD',
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: new URLSearchParams({})
-    };
-
+    const url = `${proxyBase}?bot_id=${encodeURIComponent(BOT_ID)}&text=${encodeURIComponent(message)}`;
     try{
-        const url = 'https://api.groupme.com/v3/bots/post?bot_id=6eb53a0125b6ed5a930057de4c&text='+encodeURIComponent(message);
-        console.log('api_call: POST', url);
-        const res = await fetch(url, options);
-        if(res.status === 202){
-            console.log('api_call: GroupMe responded 202 Accepted');
+        console.log('api_call: POST -> relay', { url });
+        const res = await fetch(url, { method: 'POST' });
+        // Expect relay to return JSON like { ok: true } or { ok: false, error: '...' }
+        let data = null;
+        try{ data = await res.json(); } catch(e){
+            const raw = await res.text();
+            console.error('api_call: relay returned non-json', raw);
+            return false;
+        }
+        if(res.ok && data && data.ok === true){
+            console.log('api_call: relay reported ok');
             return true;
         }
-        const body = await res.text();
-        console.error('api_call: non-202 response', { status: res.status, body });
+        console.error('api_call: relay reported failure', { status: res.status, data });
         return false;
     } catch(err){
         console.error('api_call: network/fetch error', err);
         return false;
     }
+}
+
+// Helper to read the cashier name from the greeting element set on login
+function getCashierName(){
+    const g = document.getElementById('greeting');
+    if(!g) return 'Unknown';
+    // greeting format is "Hello, Name!" — extract the name portion
+    const txt = (g.textContent || '').trim();
+    const m = txt.match(/^Hello,\s*(.*)!?$/);
+    return (m && m[1]) ? m[1].trim() : txt;
 }
 
 /* Helper: show an error message inside a popup (or create it) */
@@ -212,11 +222,11 @@ function openCategoryPopup(category, items){
                 <p style="margin-top:0;">Select one</p>
                 <div class="items-list">
                     ${items.map((it, idx) => `
-                        <label><input type="radio" name="${id}-choice" value="${escapeHtml(it)}"> ${escapeHtml(it)}</label>
+                        <label><input type="radio" name="${id}-choice" value="${escapeHtml(category)}||${escapeHtml(it)}"> ${escapeHtml(it)}</label>
                     `).join('')}
                 </div>
                 <div class="button-row">
-                    <button class="btn--primary" data-action="submit">Add</button>
+                    <button class="btn--primary" data-action="submit">Submit</button>
                     <button class="btn--secondary" data-action="cancel">Cancel</button>
                 </div>
             </div>
@@ -235,8 +245,11 @@ function openCategoryPopup(category, items){
         const btns = popup.querySelectorAll('[data-action]');
         btns.forEach(b => { b.dataset.origText = b.textContent; b.textContent = 'Processing...'; b.classList.add('disabled'); b.disabled = true; });
 
+        // parse category||item from the value
+        const [cat, itm] = (sel.value || '').split('||').map(s => s.trim());
+
         // call API and handle success/error
-        processItem(sel.value)
+        processItem(cat, itm)
             .then(() => {
                 showSuccessFlash();
                 setTimeout(() => closePopup(id), 600);
@@ -295,14 +308,25 @@ function openBundlePopup(){
             inner += `<h3 style="font-variant:small-caps; margin:0.5em 0 0.25em 0;">${escapeHtml(cat)}</h3>`;
             inner += '<div class="items-list">';
             groups[cat].forEach(it => {
-                inner += `<label><input type="checkbox" name="bundle-choice" value="${escapeHtml(it)}"> ${escapeHtml(it)}</label>`;
+                // render row with left-justified counters (- count +) and item name on the right
+                // counters are hidden until user increases (count goes from 0 -> 1)
+                const val = `${escapeHtml(cat)}||${escapeHtml(it)}`;
+                inner += `
+                    <div class="bundle-row" data-value="${val}" style="display:flex;align-items:center;justify-content:space-between;gap:0.8rem;">
+                        <div class="qty-controls" hidden style="display:inline-flex;align-items:center;gap:0.6rem;">
+                            <button type="button" class="qty-decr" aria-label="Decrease">−</button>
+                            <span class="qty-count" aria-live="polite">0</span>
+                            <button type="button" class="qty-incr" aria-label="Increase">+</button>
+                        </div>
+                        <span class="item-name" style="flex:1;">${escapeHtml(it)}</span>
+                    </div>`;
             });
             inner += '</div>';
         });
 
         inner += `
                 <div class="button-row">
-                    <button class="btn--primary" data-action="submit">Add</button>
+                    <button class="btn--primary" data-action="submit">Submit</button>
                     <button class="btn--secondary" data-action="cancel">Cancel</button>
                 </div>
             </div>
@@ -313,25 +337,80 @@ function openBundlePopup(){
 
         popup.querySelector('.close').addEventListener('click', () => closePopup(id));
         popup.querySelector('[data-action="cancel"]').addEventListener('click', () => closePopup(id));
-        // lock checkboxes when 3 are selected
-        const bundleCheckboxes = popup.querySelectorAll('input[name="bundle-choice"]');
-        function updateBundleCheckboxes(){
-            const checked = popup.querySelectorAll('input[name="bundle-choice"]:checked');
-            if(checked.length >= 3){
-                bundleCheckboxes.forEach(cb => { if(!cb.checked) cb.disabled = true; });
-            } else {
-                bundleCheckboxes.forEach(cb => { cb.disabled = false; });
-            }
+        // helpers: compute global total from qty-counts
+        function globalTotal(){
+            return Array.from(popup.querySelectorAll('.qty-count'))
+                .reduce((sum, el) => sum + (parseInt(el.textContent,10) || 0), 0);
         }
-        bundleCheckboxes.forEach(cb => cb.addEventListener('change', updateBundleCheckboxes));
+        // lock plus buttons when global total reaches 3
+        function updateBundleCheckboxes(){
+            const atCap = globalTotal() >= 3;
+            // disable all qty-incr buttons when at cap; enable otherwise but respect per-item cap via click handler
+            const incrs = Array.from(popup.querySelectorAll('.qty-incr'));
+            incrs.forEach(b => { b.disabled = atCap; });
+        }
+
+        // helpers for per-item count stored in the qty-count element (0..3)
+        function getItemCount(val){
+            const row = popup.querySelector(`.bundle-row[data-value="${CSS.escape(val)}"]`);
+            if(!row) return 0;
+            const countEl = row.querySelector('.qty-count');
+            return countEl ? (parseInt(countEl.textContent,10) || 0) : 0;
+        }
+        function setItemCount(val, n){
+            const row = popup.querySelector(`.bundle-row[data-value="${CSS.escape(val)}"]`);
+            if(!row) return;
+            const controls = row.querySelector('.qty-controls');
+            const countEl = row.querySelector('.qty-count');
+            const clamped = Math.max(0, Math.min(3, n|0));
+            if(countEl) countEl.textContent = String(clamped);
+            controls.hidden = clamped === 0;
+        }
+
+        // delegated change handler: update global disabling and per-item controls
+        // no checkboxes anymore; counters start hidden at 0 and show when increased
+
+        // plus/minus controls: increase/decrease count by adding/removing checked clones
+        popup.addEventListener('click', (e) => {
+            const incBtn = e.target.closest('.qty-incr');
+            const decBtn = e.target.closest('.qty-decr');
+            if(!incBtn && !decBtn) return;
+            const row = (incBtn || decBtn).closest('.bundle-row');
+            if(!row) return;
+            const val = row.dataset.value || '';
+            let count = getItemCount(val);
+            if(incBtn){
+                // respect global and per-item caps
+                if(globalTotal() >= 3){ alert('You can only choose up to 3 items'); return; }
+                if(count >= 3) return;
+                setItemCount(val, count + 1);
+            } else if(decBtn){
+                if(count <= 0) return;
+                const next = count - 1;
+                setItemCount(val, next);
+            }
+            updateBundleCheckboxes();
+        });
 
         popup.querySelector('[data-action="submit"]').addEventListener('click', () => {
-            const checked = Array.from(popup.querySelectorAll('input[name="bundle-choice"]:checked')).map(i=>i.value);
-            if(checked.length === 0) return alert('Please choose up to 3 items');
-            if(checked.length > 3) return alert('You can only choose up to 3 items');
+            const total = globalTotal();
+            if(total === 0) return alert('Please choose up to 3 items');
+            if(total > 3) return alert('You can only choose up to 3 items');
             // processing UI and store original text
             const btns = popup.querySelectorAll('[data-action]');
             btns.forEach(b => { b.dataset.origText = b.textContent; b.textContent = 'Processing...'; b.classList.add('disabled'); b.disabled = true; });
+
+            // build expanded items from per-item counters
+            const rows = Array.from(popup.querySelectorAll('.bundle-row'));
+            const checked = [];
+            rows.forEach(r => {
+                const val = r.dataset.value || '';
+                const cnt = parseInt(r.querySelector('.qty-count').textContent,10) || 0;
+                if(cnt > 0){
+                    const [c, it] = val.split('||').map(s=>s.trim());
+                    for(let i=0;i<cnt;i++) checked.push({ category: c || 'Item', item: it || val });
+                }
+            });
 
             processBundle(checked)
                 .then(() => {
@@ -358,9 +437,18 @@ function closePopup(id){
 }
 
 /* Placeholder processing functions — user will replace these with real API calls */
-async function processItem(itemName){
-    console.log('processItem: preparing message for:', itemName);
-    const success = await api_call(itemName);
+async function processItem(category, itemName){
+    console.log('processItem: preparing message for:', category, itemName);
+    const cashier = getCashierName();
+    // Format (wrapped with dashed lines):
+    // -------------------
+    // SALE
+    // Single - Category: Item
+    // ---
+    // (Sold by Name)
+    // -------------------
+    const message = `-------------------\nSALE\nSingle - ${category}: ${itemName}\n---\n(Sold by ${cashier})\n-------------------`;
+    const success = await api_call(message);
     if(success === true){
         console.log('processItem: api_call success');
         return true;
@@ -372,8 +460,11 @@ async function processItem(itemName){
 
 async function processBundle(items){
     console.log('processBundle: preparing bundle message for:', items);
-    const text = 'Bundle: ' + items.join(', ');
-    const success = await api_call(text);
+    const cashier = getCashierName();
+    // items is an array of { category, item }
+    const lines = items.map(it => `· ${it.category}: ${it.item}`).join('\n');
+    const message = `-------------------\nSALE\nBundle - \n${lines}\n---\n(Sold by ${cashier})\n-------------------`;
+    const success = await api_call(message);
     if(success === true){
         console.log('processBundle: api_call success');
         return true;

@@ -1,8 +1,7 @@
 Category,Items,Color
-Regular Chips,"[Original|Salt & Vinegar|Cheese]",lightpink
-Hot Chips,"[Spicy|Extra Hot]",orangered
-Cookies,"[Chocolate Chip|Oatmeal Raisin]",cyan
-Candies,"[Skittles|M&Ms]",greenyellow
-Sodas,"[Coke|Sprite]",salmon
-Teas,"[Strawberry|Pineapple|Mango]",plum
-Cookies,Oatmeal Raisin,cyan
+Regular Chips,"[Lay's BBQ | SunChips | Lay's Salt & Vinegar | Cheetos | Doritos Cool Ranch | Fritos]",lightpink
+Hot Chips,"[Flamin' Hot Cheetos | Flamin' Hot Doritos | Chester's Fries | Flamin' Hot Funyuns]",orangered
+Cookies,"[]",cyan
+Candies,"[Skittles Original | Skittles Sour | Skittles Wild Berry | Starburst Original | Starburst FaveREDS]",greenyellow
+Water + Sodas,"[Water | Coke | Dr. Pepper | Sprite]",salmon
+Teas,"[Fruit Punch | Mango | Watermelon]",plum
