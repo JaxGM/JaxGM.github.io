@@ -3,44 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>College Applications Tracker</title>
+    <title>Embed</title>
     <style>
-        /* 1. Basic Page Styling */
+        /* This makes the iframe fill the entire browser window */
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
             width: 100%;
-            background-color: #f4f4f9; /* Light grey background */
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            overflow: hidden; /* Prevents double scrollbars */
         }
 
-        header {
-            padding: 20px;
-            text-align: center;
-        }
-
-        /* 2. The Responsive Container */
-        .container {
-            position: relative;
-            width: 95%;      /* Width of the spreadsheet on screen */
-            max-width: 1200px; 
-            height: 85vh;    /* 85% of the viewport height */
-            background: white;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
-
-        /* 3. Making the Iframe fill the container */
         iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
             border: none;
@@ -49,18 +23,11 @@
 </head>
 <body>
 
-    <header>
-        <h1>College Applications Status</h1>
-        <p>Live update from Excel</p>
-    </header>
-
-    <div class="container">
-        <iframe 
-            src="https://browardcountyschools-my.sharepoint.com/personal/0614105469_my_browardschools_com/_layouts/15/Doc.aspx?sourcedoc={6baeb582-2a51-4700-903b-4296aa57527b}&action=embedview&wdAllowInteractivity=False&Item=Applications!Print_Area&wdDownloadButton=True&wdInConfigurator=True&wdInConfigurator=True&edaebf=rslc0"
-            frameborder="0" 
-            scrolling="no">
-        </iframe>
-    </div>
+    <iframe 
+        src="https://browardcountyschools-my.sharepoint.com/personal/0614105469_my_browardschools_com/_layouts/15/Doc.aspx?sourcedoc={6baeb582-2a51-4700-903b-4296aa57527b}&action=embedview&wdAllowInteractivity=False&ActiveCell='Applications'!I1&Item=Applications!Print_Area&wdHideGridlines=True&wdInConfigurator=True&wdInConfigurator=True&edaebf=rslc0"
+        frameborder="0" 
+        scrolling="no">
+    </iframe>
 
 </body>
 </html>
